@@ -1,23 +1,40 @@
 #include <iostream>
-#include <opencv2/opencv.hpp>
+#include <string>
+#include "face_detector.hpp"
 
-int main() {
-    std::cout << "MCP Demo with OpenCV " << CV_VERSION << std::endl;
-    
-    // 创建一个测试图像
-    cv::Mat image(400, 600, CV_8UC3, cv::Scalar(255, 255, 255));
-    
-    // 在图像上绘制文本
-    cv::putText(image, "MCP Demo", 
-                cv::Point(200, 200),
-                cv::FONT_HERSHEY_SIMPLEX,
-                1.0,
-                cv::Scalar(0, 0, 255),
-                2);
-    
-    // 显示图像
-    cv::imshow("MCP Demo", image);
-    cv::waitKey(0);
-    
-    return 0;
+int main(int argc, char* argv[]) {
+    try {
+        // 检查命令行参数
+        if (argc != 3) {
+            std::cerr << "Usage: " << argv[0] 
+                      << " <cascade_file_path> <image_path>" << std::endl;
+            return 1;
+        }
+
+        // 创建人脸检测器
+        mcp::FaceDetector detector(argv[1]);
+
+        // 读取图像
+        cv::Mat image = cv::imread(argv[2]);
+        if (image.empty()) {
+            std::cerr << "Error: Could not read image file: " << argv[2] << std::endl;
+            return 1;
+        }
+
+        // 检测人脸
+        std::vector<cv::Rect> faces = detector.detect(image);
+
+        // 绘制结果
+        detector.drawFaces(image, faces);
+
+        // 显示结果
+        std::cout << "Found " << faces.size() << " faces" << std::endl;
+        cv::imshow("Face Detection Result", image);
+        cv::waitKey(0);
+
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
 }
