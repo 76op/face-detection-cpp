@@ -7,7 +7,7 @@ protected:
     void SetUp() override {
         // 设置测试用的级联分类器路径
         cascade_path_ = cv::samples::findFile(
-            "haarcascade_frontalface_alt.xml",
+            "../data/haarcascade_frontalface_alt.xml",
             false,
             "../data"
         );
