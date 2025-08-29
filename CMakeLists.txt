@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 查找 OpenCV 包
 find_package(OpenCV REQUIRED)
 
+# 查找 Python
+find_package(Python3 REQUIRED)
+
 # 启用测试
 enable_testing()
 
@@ -24,6 +27,26 @@ FetchContent_MakeAvailable(googletest)
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+# 创建数据目录
+add_custom_target(create_data_dirs
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/data/test_images
+)
+
+# 下载 Haar 级联分类器
+add_custom_target(download_cascade
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_alt.xml
+        ${CMAKE_SOURCE_DIR}/data/haarcascade_frontalface_alt.xml
+    DEPENDS create_data_dirs
+)
+
+# 生成测试图片
+add_custom_target(generate_test_images
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/generate_test_images.py
+    DEPENDS create_data_dirs
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
 # 添加库目标
 add_library(face_detector
     src/face_detector.cpp
@@ -37,11 +60,21 @@ target_link_libraries(${PROJECT_NAME}
     ${OpenCV_LIBS}
 )
 
-# 添加测试
-add_executable(face_detector_test
+# 添加单元测试
+add_executable(unit_tests
     tests/face_detector_test.cpp
 )
-target_link_libraries(face_detector_test
+target_link_libraries(unit_tests
+    face_detector
+    GTest::gtest_main
+    ${OpenCV_LIBS}
+)
+
+# 添加集成测试
+add_executable(integration_tests
+    tests/integration_test.cpp
+)
+target_link_libraries(integration_tests
     face_detector
     GTest::gtest_main
     ${OpenCV_LIBS}
@@ -49,10 +82,9 @@ target_link_libraries(face_detector_test
 
 # 注册测试
 include(GoogleTest)
-gtest_discover_tests(face_detector_test)
+gtest_discover_tests(unit_tests)
+gtest_discover_tests(integration_tests)
 
-# 下载级联分类器文件
-set(CASCADE_URL "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_alt.xml")
-set(CASCADE_PATH "${CMAKE_BINARY_DIR}/data/haarcascade_frontalface_alt.xml")
-
-file(DOWNLOAD ${CASCADE_URL} ${CASCADE_PATH} SHOW_PROGRESS)
+# 添加测试数据依赖
+add_dependencies(unit_tests download_cascade generate_test_images)
+add_dependencies(integration_tests download_cascade generate_test_images)
