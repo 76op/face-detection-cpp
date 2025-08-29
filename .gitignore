@@ -1,0 +1,26 @@
+# Build directories
+build/
+out/
+
+# IDE specific files
+.vs/
+.vscode/
+.idea/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+
+# Compiled files
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Debug symbols
+*.pdb
+
+# Dependencies
+/_deps/
